@@ -14,6 +14,7 @@
 
 @property (nonatomic, readwrite) SVProgressHUDMaskType maskType;
 @property (nonatomic) NSTimer *fadeOutTimer;
+@property (nonatomic, readwrite) int requestCount;
 
 @property (nonatomic, readonly) UIWindow *overlayWindow;
 @property (nonatomic, readonly) UIView *hudView;
@@ -38,7 +39,7 @@
 
 @implementation SVProgressHUD
 
-@synthesize overlayWindow, hudView, maskType, fadeOutTimer, stringLabel, imageView, spinnerView, visibleKeyboardHeight;
+@synthesize overlayWindow, hudView, maskType, fadeOutTimer, stringLabel, imageView, spinnerView, visibleKeyboardHeight, requestCount;
 
 - (void)dealloc {
 	self.fadeOutTimer = nil;
@@ -127,6 +128,7 @@
         self.backgroundColor = [UIColor clearColor];
 		self.alpha = 0;
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        self.requestCount = 0;
     }
 	
     return self;
@@ -335,6 +337,8 @@
 
 - (void)showWithStatus:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType networkIndicator:(BOOL)show {
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.requestCount++;
+
         if(!self.superview)
             [self.overlayWindow addSubview:self];
         
@@ -398,7 +402,10 @@
 
 - (void)dismiss {
     dispatch_async(dispatch_get_main_queue(), ^{
-
+        self.requestCount--;
+        if(self.requestCount > 0)
+            return;
+        
         [UIView animateWithDuration:0.15
                               delay:0
                             options:UIViewAnimationCurveEaseIn | UIViewAnimationOptionAllowUserInteraction
@@ -504,7 +511,7 @@
 }
 
 - (CGFloat)visibleKeyboardHeight {
-        
+    
     UIWindow *keyboardWindow = nil;
     for (UIWindow *testWindow in [[UIApplication sharedApplication] windows]) {
         if(![[testWindow class] isEqual:[UIWindow class]]) {
@@ -512,7 +519,7 @@
             break;
         }
     }
-
+    
     // Locate UIKeyboard.  
     UIView *foundKeyboard = nil;
     for (__strong UIView *possibleKeyboard in [keyboardWindow subviews]) {
@@ -527,7 +534,7 @@
             break;
         }
     }
-        
+    
     if(foundKeyboard && foundKeyboard.bounds.size.height > 100)
         return foundKeyboard.bounds.size.height;
     
